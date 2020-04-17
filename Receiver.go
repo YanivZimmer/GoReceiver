@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -69,13 +70,33 @@ func readReq(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.Header().Set("content-type", "application/json")
-	f, err := os.Create(fmt.Sprint("/tmp/goServer/test", msg.Id))
+	f, err := os.Create(fmt.Sprint("/tmp/goServer/test_json", msg.Id))
 	check(err)
 	defer f.Close()
+	//f_xml, err := os.Create(fmt.Sprint("/tmp/goServer/test_xml", msg.Id))
+	//check(err)
+	//defer f_xml.Close()
 	f.Write(output)
 	w.Write(output)
+	//out, err := xml.MarshalIndent(output, "\t", "\t")
+	//fmt.Println(out)
 }
+func savaFile(w http.ResponseWriter, r *http.Request) {
+	// the FormFile function takes in the POST input id file
+	file, header, err := r.FormFile("file")
+	check(err)
+	defer file.Close()
 
+	out, err := os.Create(header.Filename)
+	check(err)
+	defer out.Close()
+
+	// write the content from POST to the file
+	_, err = io.Copy(out, file)
+	check(err)
+	fmt.Fprintf(w, "File uploaded successfully: ")
+	fmt.Fprintf(w, header.Filename)
+}
 func main() {
 
 	fmt.Println("hey yo")
@@ -83,6 +104,7 @@ func main() {
 	http.HandleFunc("/hello", hello)
 	http.HandleFunc("/headers", headers)
 	http.HandleFunc("/WriteToFile", readReq)
+	http.HandleFunc("/saveFile", savaFile)
 	err := http.ListenAndServe(":8090", nil)
 	check(err)
 }
